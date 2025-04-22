@@ -25,14 +25,28 @@ pip install fastapi "uvicorn[standard]" websocket-client opencv-python numpy
 
 Then open a new terminal and clone the repository in your source workspace
 
-example:
+Example:
 
 ```bash
 cd ~/ros2_ws/src
 ```
 
-then
+Then
 
 ```bash
 git clone https://github.com/eduardohufg/img_bridge
+```
+
+Return to your workspace, compile and source the workspace
+
+```bash
+cd ..
+colcon build
+source install/setup.bash
+```
+
+You can run the gridge with the following command
+
+```bash
+ros2 run img_brigde img_bridge
 ```
