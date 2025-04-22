@@ -8,15 +8,10 @@ from .ros2_bridge import start_ros2, stop_ros2
 from .routes.ws_img import img_router
 from contextlib import asynccontextmanager
 
-
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     globals.loop = asyncio.get_running_loop()
-    # 1) Arranca ROS2
     start_ros2()
-    # 2) Registra los callbacks ROS2 que usan the_loop
     await asyncio.sleep(0.1)
   
     yield

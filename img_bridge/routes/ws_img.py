@@ -5,8 +5,12 @@ import asyncio, cv2, base64
 img_router = APIRouter()
 active_connections: Set[WebSocket] = set()
 
-# 1) Abre la cámara una vez al importar el módulo
 cap = cv2.VideoCapture(0)
+
+#cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+
 if not cap.isOpened():
     raise RuntimeError("No se pudo abrir /dev/video0")
 
@@ -27,21 +31,24 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            # 2) Reusa el mismo cap para todos
+
             ret, frame = cap.read()
+
             if not ret:
                 break
 
-            _, buf = cv2.imencode(".jpg", frame)
+            #encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+
+            _, buf = cv2.imencode(".jpg", frame)  #cv2.imencode(".jpg", frame, encode_params)
+
             b64 = base64.b64encode(buf).decode("utf-8")
             await send_image_to_websockets(b64)
 
             await asyncio.sleep(1/30)
+
+
     except WebSocketDisconnect:
         pass
     finally:
         active_connections.discard(websocket)
         print(f"Cliente desconectado ({len(active_connections)})")
-
-# 3) En el shutdown del servidor, libera la cámara si quieres
-#    (opcional, FastAPI no lo hace automáticamente)
