@@ -123,3 +123,115 @@ class WsConnection:
         self.ws_app.close()
         self.thread.join()
 ```
+
+Then make sure that in your setup.py of your package, in the find_packages include the lib directory, like that:
+
+```bash
+packages=find_packages(exclude=['test'], include=[package_name, 'lib', 'lib.*']),
+```
+
+Now you can import the library in your code like: 
+
+```bash
+from lib.ws_connection import WsConnection
+```
+
+#### Example
+
+
+```bash
+
+from lib.ws_connection import WsConnection
+import cv2
+
+if __name__ == "__main__":
+   
+    conn = WsConnection("ws://localhost:8000/ws/connection/img")
+
+    try:
+        while True:
+            frame = conn.get_frame()
+            if frame is not None:
+                cv2.imshow("WS Stream", frame)
+            # Si pulsas 'q', sales
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    finally:
+        conn.close()
+        cv2.destroyAllWindows()
+```
+
+#### Complete example
+
+```bash
+
+import websocket
+import threading
+import cv2
+import numpy as np
+import base64
+
+class WsConnection:
+    def __init__(self, ws_url):
+        self.ws_url = ws_url
+        self.frame = None
+        self.lock = threading.Lock()
+
+        self.ws_app = websocket.WebSocketApp(
+            self.ws_url,
+            on_open=self.on_open,
+            on_message=self.on_message,
+            on_error=self.on_error,
+            on_close=self.on_close
+        )
+        self.thread = threading.Thread(target=self.ws_app.run_forever, daemon=True)
+        self.thread.start()
+
+    def on_open(self, ws):
+        print("Conected to server")
+
+    def on_message(self, ws, message):
+        img_bytes = base64.b64decode(message)
+        np_arr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+        if frame is not None:
+            with self.lock:
+                self.frame = frame
+
+    def on_error(self, ws, error):
+        print("Error:", error)
+
+    def on_close(self, ws, close_status_code, close_msg):
+        print("Conction closed")
+
+    def get_frame(self):
+        
+        with self.lock:
+            return None if self.frame is None else self.frame.copy()
+
+    def close(self):
+
+        self.ws_app.close()
+        self.thread.join()
+
+if __name__ == "__main__":
+   
+    conn = WsConnection("ws://localhost:8000/ws/connection/img")
+
+    try:
+        while True:
+            frame = conn.get_frame()
+            if frame is not None:
+                cv2.imshow("WS Stream", frame)
+            # Si pulsas 'q', sales
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    finally:
+        conn.close()
+        cv2.destroyAllWindows()
+
+
+```
+
+
